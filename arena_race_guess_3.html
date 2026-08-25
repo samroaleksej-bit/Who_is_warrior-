@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Угадай расу бойца</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0a10;
+    --bg-card: #12121c;
+    --bg-hint: #1a1a2a;
+    --gold: #d4a843;
+    --gold-dim: #8a6f2e;
+    --gold-glow: #d4a84355;
+    --cyan: #4ecdc4;
+    --red: #c0392b;
+    --text: #e8e4dc;
+    --text-dim: #7a7770;
+    --correct: #27ae60;
+    --wrong: #c0392b;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 480px;
+    width: 100%;
+    padding-top: 20px;
+  }
+
+  .eye {
+    text-align: center;
+    font-size: 48px;
+    margin-bottom: 8px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--gold);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--bg-hint);
+    border-radius: 2px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .hint-card {
+    background: var(--bg-card);
+    border: 1px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 14px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.5s ease;
+  }
+
+  .hint-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .hint-card.locked {
+    position: relative;
+    overflow: hidden;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hint-card.locked .hint-number,
+  .hint-card.locked .hint-text {
+    visibility: hidden;
+  }
+
+  .hint-card.locked::after {
+    content: '👁';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-hint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    border-radius: 11px;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
+  .hint-card.locked:hover::after {
+    opacity: 0.8;
+  }
+
+  .hint-card.revealed::after {
+    display: none;
+  }
+
+  .hint-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .hint-text {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .hint-text .keyword {
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .btn-reveal {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+  }
+
+  .btn-reveal:hover {
+    background: var(--gold-glow);
+    border-color: var(--gold);
+  }
+
+  .btn-reveal:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .guess-section {
+    background: var(--bg-card);
+    border: 1px solid var(--gold-dim);
+    border-radius: 12px;
+    padding: 24px 20px;
+    margin-top: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .guess-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .option-btn {
+    padding: 12px 8px;
+    background: var(--bg-hint);
+    border: 1px solid #2a2a3a;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--gold-dim);
+    background: var(--bg-card);
+  }
+
+  .option-btn.correct {
+    background: #27ae6020;
+    border-color: var(--correct);
+    color: var(--correct);
+    animation: pulse-correct 0.5s ease;
+  }
+
+  .option-btn.wrong {
+    background: #c0392b15;
+    border-color: var(--wrong);
+    color: var(--wrong);
+    opacity: 0.5;
+  }
+
+  .option-btn:disabled {
+    cursor: not-allowed;
+  }
+
+  @keyframes pulse-correct {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+
+  .result {
+    display: none;
+    text-align: center;
+    margin-top: 24px;
+    padding: 28px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    animation: fadeUp 0.6s ease;
+  }
+
+  .result.show { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-icon { font-size: 52px; margin-bottom: 12px; }
+
+  .result-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .result-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .result-lore {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    font-style: italic;
+    padding: 16px;
+    background: var(--bg-hint);
+    border-radius: 8px;
+    border-left: 3px solid var(--gold-dim);
+  }
+
+  .hints-used {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #1a1a2a;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .footer a {
+    color: var(--gold-dim);
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="eye">👁</div>
+  <h1>УГАДАЙ РАСУ БОЙЦА</h1>
+  <p class="subtitle">Новый воин выходит на Арену. Кто он?</p>
+
+  <button class="btn-reveal" id="revealBtn" onclick="revealNext()">
+    Открыть подсказку I
+  </button>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress" style="width: 0%"></div>
+  </div>
+
+  <div class="hint-card locked" id="hint1">
+    <div class="hint-number">Подсказка I</div>
+    <div class="hint-text">Его предки не совсем <span class="keyword">смертные.</span> В его крови течёт нечто <span class="keyword">свыше</span> — отголосок силы, которая старше любого королевства.</div>
+  </div>
+
+  <div class="hint-card locked" id="hint2">
+    <div class="hint-number">Подсказка II</div>
+    <div class="hint-text">Иногда его глаза <span class="keyword">вспыхивают светом</span> — не магическим, а чем-то древнее магии. Те, кто видел это, говорят, что свет был <span class="keyword">тёплым.</span> Другие — что <span class="keyword">ослепительным.</span></div>
+  </div>
+
+  <div class="hint-card locked" id="hint3">
+    <div class="hint-number">Подсказка III</div>
+    <div class="hint-text">В момент крайней нужды он способен <span class="keyword">преобразиться</span> — и те, кто стоит рядом, на мгновение видят <span class="keyword">крылья.</span> Или тени крыльев. Или просто чувствуют, что воздух стал <span class="keyword">другим.</span></div>
+  </div>
+
+  <div class="hint-card locked" id="hint4">
+    <div class="hint-number">Подсказка IV</div>
+    <div class="hint-text">Храмы <span class="keyword">Латандера</span> и <span class="keyword">Селунэ</span> считают таких, как он, <span class="keyword">благословлёнными.</span> Не все с этим согласны — особенно те, кто знает, что <span class="keyword">свет</span> бывает разным.</div>
+  </div>
+
+  <div class="hint-card locked" id="hint5">
+    <div class="hint-number">Подсказка V</div>
+    <div class="hint-text">В Player's Handbook его раса описана так: <span class="keyword">«Наследники небесной силы, несущие искру божественного.»</span> Он не ангел — но кое-что от ангела в нём <span class="keyword">осталось.</span></div>
+  </div>
+
+  <div class="guess-section" id="guessSection">
+    <div class="guess-title">Кто этот боец?</div>
+    <div class="options-grid" id="optionsGrid">
+      <button class="option-btn" onclick="guess('Тифлинг')">Тифлинг</button>
+      <button class="option-btn" onclick="guess('Аасимар')">Аасимар</button>
+      <button class="option-btn" onclick="guess('Полуэльф')">Полуэльф</button>
+      <button class="option-btn" onclick="guess('Генаси')">Генаси</button>
+      <button class="option-btn" onclick="guess('Калаштар')">Калаштар</button>
+      <button class="option-btn" onclick="guess('Дампир')">Дампир</button>
+    </div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="result-icon" id="resultIcon"></div>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-text" id="resultText"></div>
+    <div class="result-lore" id="resultLore"></div>
+    <div class="hints-used" id="hintsUsed"></div>
+  </div>
+
+  <div class="footer">
+    НРИ Арена — Circle of DMs<br>
+    <a href="https://t.me/circleofdms">Telegram</a> · <a href="https://www.twitch.tv/cmdshows">Twitch</a> · <a href="https://www.tiktok.com/@cdmshows">TikTok</a>
+  </div>
+
+</div>
+
+<script>
+  let hintsRevealed = 0;
+  const totalHints = 5;
+  let answered = false;
+
+  function revealNext() {
+    if (hintsRevealed >= totalHints || answered) return;
+    hintsRevealed++;
+    const hint = document.getElementById('hint' + hintsRevealed);
+    hint.classList.remove('locked');
+    hint.classList.add('revealed');
+
+    const progress = document.getElementById('progress');
+    progress.style.width = (hintsRevealed / totalHints * 100) + '%';
+
+    const btn = document.getElementById('revealBtn');
+    if (hintsRevealed >= totalHints) {
+      btn.textContent = 'Все подсказки открыты';
+      btn.disabled = true;
+    } else {
+      const numerals = ['I','II','III','IV','V'];
+      btn.textContent = 'Открыть подсказку ' + numerals[hintsRevealed];
+    }
+  }
+
+  function guess(race) {
+    if (answered) return;
+    answered = true;
+    const correct = race === 'Аасимар';
+    const buttons = document.querySelectorAll('.option-btn');
+
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      if (btn.textContent === 'Аасимар') {
+        btn.classList.add('correct');
+      } else if (btn.textContent === race && !correct) {
+        btn.classList.add('wrong');
+      }
+    });
+
+    document.getElementById('revealBtn').style.display = 'none';
+
+    // Reveal all remaining hints
+    for (let i = 1; i <= totalHints; i++) {
+      const h = document.getElementById('hint' + i);
+      h.classList.remove('locked');
+      h.classList.add('revealed');
+    }
+    document.getElementById('progress').style.width = '100%';
+
+    const result = document.getElementById('result');
+    const icon = document.getElementById('resultIcon');
+    const title = document.getElementById('resultTitle');
+    const text = document.getElementById('resultText');
+    const lore = document.getElementById('resultLore');
+    const used = document.getElementById('hintsUsed');
+
+    if (correct) {
+      icon.textContent = '✨';
+      if (hintsRevealed <= 1) {
+        title.textContent = 'С первой подсказки?!';
+        text.textContent = 'Бехолдер впечатлён. А он редко впечатляется.';
+      } else if (hintsRevealed <= 3) {
+        title.textContent = 'Верно!';
+        text.textContent = 'Неплохо. Видно, что вы знаете свой лор.';
+      } else {
+        title.textContent = 'Угадали!';
+        text.textContent = 'Подсказок ушло немало — но результат есть.';
+      }
+    } else {
+      icon.textContent = '👁';
+      title.textContent = 'Не угадали';
+      text.textContent = 'Правильный ответ — Аасимар. Но Бехолдер не осуждает. Он просто запоминает.';
+    }
+
+    lore.textContent = 'Новый боец Арены — Аасимар. Наследник небесной крови, несущий искру божественного. Свет в его жилах — не метафора. На Арене он будет сиять. Или сгорит. Бехолдеру интересно, что именно.';
+    used.textContent = 'Использовано подсказок: ' + hintsRevealed + ' из ' + totalHints;
+
+    result.classList.add('show');
+    result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+</script>
+</body>
+</html>
